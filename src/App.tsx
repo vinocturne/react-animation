@@ -6,12 +6,18 @@ const Wrapper = styled(motion.div)`
     height: 100vh;
     width: 100vw;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
 `;
 
 const Box = styled(motion.div)`
+    display: flex;
+    position: absolute;
+    top: 100px;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
     width: 200px;
     height: 200px;
     background-color: rgba(255, 255, 255, 1);
@@ -20,52 +26,78 @@ const Box = styled(motion.div)`
 `;
 
 const boxVariants = {
-    initial: {
+    //return을 해야하기 때문에 직접 {return}을 사용하거나
+    //혹은 {}를 ()로 감싸주면 된다.
+    entry: (isBack: boolean) => ({
+        x: isBack ? -500 : 500,
         opacity: 0,
         scale: 0,
-    },
-    visible: {
+    }),
+    center: {
+        x: 0,
         opacity: 1,
         scale: 1,
-        rotateZ: 360,
+        transition: {
+            duration: 0.3,
+        },
     },
-    leaving: {
+    exit: (isBack: boolean) => ({
+        x: isBack ? 500 : -500,
         opacity: 0,
-        y: 20,
-    },
+        scale: 0,
+        transition: {
+            duration: 0.3,
+        },
+    }),
 };
 
 function App() {
-    // 기본적인 리액트에서 컴포넌트를 보여주고 감추는 것은 아래와 같다
-    // 클릭하자마자 showing이 바뀌면서 null이 주어지기 때문에 애니메이션 없이 바로 바뀌게된다.
-    // ------------------------------------------------
-    const [showing, setShowing] = useState(false);
-    const toggleShowing = () => setShowing((prev) => !prev);
-    // return (
-    //     <Wrapper>
-    //         {showing ? <Box /> : null}
-    //         <button onClick={toggleShowing}>Click</button>
-    //     </Wrapper>
-    // );
-    //-------------------------------------------------
-    // <AnimatePresence>는 컴포넌트 표시와 비표시 때 애니메이션을 활성화하는데,
-    // AnimatePresence 안에 조건들이 들어가게 된다.
-    // AnimatePresence는 애니메이션이 적용되는 판을 깔아주는 것이고
-    // 애니메이션 자체는 해당 컴포넌트에 적용해주면 제대로 적용된다.
-    // exit 속성을 가지고 사라질때 애니메이션을 지정할 수 있다.
+    const [visible, setVisible] = useState(1);
+    const [back, setBack] = useState(false);
+    const next = () => {
+        setBack(false);
+        setVisible((prev) => (prev === 10 ? 10 : prev + 1));
+    };
+    const prev = () => {
+        setBack(true);
+        setVisible((prev) => (prev === 1 ? 1 : prev - 1));
+    };
     return (
         <Wrapper>
-            <AnimatePresence>
-                {showing ? (
-                    <Box
-                        variants={boxVariants}
-                        initial="initial"
-                        animate="visible"
-                        exit="leaving"
-                    />
-                ) : null}
+            {/* custom은 해당 컴포넌트와 AnimatePresence 모두 넣어주어야 한다. */}
+            {/* exitBeforeEnter 속성을 사용하여 한 애니메이션이 완전히 끝난 뒤에 다음 애니메이션을 동작시킬 수도 있다. */}
+            <AnimatePresence custom={back}>
+                {/* 기본적으로는 아래와 같이 설정하는 것이 일반적이나, 이렇게 되면 한 개의 박스와 9개의 null을 생성하고
+                  key가 바뀔 때마다 새로운 값으로 이를 바꿔주게 된다.  */}
+                {/* {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
+                    i === visible ? (
+                        <Box
+                            key={i}
+                            variants={boxVariants}
+                            initial="entry"
+                            animate="center"
+                            exit="exit"
+                        >
+                            {i}
+                        </Box>
+                   ) : null
+                 )} */}
+                {/* 이는 아래와 같이 수정 가능하다.
+                    key값이 바뀌면 리액트는 새로운 컴포넌트를 랜더링한다.*/}
+                <Box
+                    custom={back}
+                    key={visible}
+                    variants={boxVariants}
+                    initial="entry"
+                    animate="center"
+                    exit="exit"
+                >
+                    {visible}
+                </Box>
+                {/* custom은 variants에 데이터를 보낼 수 있게 해주는 property */}
             </AnimatePresence>
-            <button onClick={toggleShowing}>Click</button>
+            <button onClick={next}>next</button>
+            <button onClick={prev}>prev</button>
         </Wrapper>
     );
 }
